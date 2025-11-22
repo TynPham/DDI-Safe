@@ -76,14 +76,12 @@ function App() {
 
       setImageResults((prev) => [...prev, ...newResults]);
 
-      // Process each image
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      // Process all images in parallel
+      const promises = files.map(async (file) => {
         try {
-          // const result =
-          //     await drugInteractionAPI.extractDrugNamesFromImage(file);
           const result = await drugExtractionMutation.mutateAsync(file);
 
+          // Update image result
           setImageResults((prev) =>
             prev.map((imgResult) =>
               imgResult.file.name === file.name
@@ -101,6 +99,8 @@ function App() {
             const newDrugs = result.result.filter((drug) => !prev.includes(drug));
             return [...prev, ...newDrugs];
           });
+
+          return { success: true, file, result };
         } catch (error) {
           console.error(`Error processing ${file.name}:`, error);
           setImageResults((prev) =>
@@ -114,8 +114,12 @@ function App() {
                 : imgResult
             )
           );
+          return { success: false, file, error };
         }
-      }
+      });
+
+      // Wait for all promises to complete (whether success or failure)
+      await Promise.allSettled(promises);
 
       setIsProcessingImages(false);
     },
@@ -366,7 +370,7 @@ function App() {
                                       Đang Kiểm Tra Tương Tác...
                                     </>
                                   ) : (
-                                    `Kiểm Tra Tương Tác cho ${detectedDrugs.length} Thuốc`
+                                    `Kiểm Tra Tương Tác cho ${detectedDrugs.length} thành phần Thuốc`
                                   )}
                                 </Button>
                               </div>
