@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, X, FileImage, Plus } from "lucide-react";
 import { Button } from "./ui/button";
@@ -22,57 +22,80 @@ export function ImageUpload({
   alwaysShowUpload = false,
 }: ImageUploadProps) {
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
+  const prevSelectedImagesRef = useRef<File[]>([]);
 
   // Recreate previews from selectedImages when component mounts or selectedImages changes
   useEffect(() => {
-    setPreviews((prevPreviews) => {
-      // Find files that need previews
-      const filesNeedingPreviews = selectedImages.filter((file) => !prevPreviews[file.name]);
+    const currentFileNames = selectedImages.map((img) => img.name);
+    const prevFileNames = prevSelectedImagesRef.current.map((img) => img.name);
 
-      if (filesNeedingPreviews.length === 0) {
+    // Check if files have actually changed
+    const filesChanged = currentFileNames.length !== prevFileNames.length || currentFileNames.some((name, idx) => name !== prevFileNames[idx]);
+
+    if (!filesChanged) {
+      prevSelectedImagesRef.current = selectedImages;
+      return;
+    }
+
+    // Use setTimeout to defer state updates and avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setPreviews((prevPreviews) => {
         // Clean up previews for removed files
-        const currentFileNames = selectedImages.map((img) => img.name);
         const previewsToKeep: { [key: string]: string } = {};
         Object.keys(prevPreviews).forEach((key) => {
           if (currentFileNames.includes(key)) {
             previewsToKeep[key] = prevPreviews[key];
           }
         });
+
+        // Find files that need previews
+        const filesNeedingPreviews = selectedImages.filter((file) => !previewsToKeep[file.name]);
+
+        if (filesNeedingPreviews.length === 0) {
+          prevSelectedImagesRef.current = selectedImages;
+          return previewsToKeep;
+        }
+
+        // Create previews for new files
+        const newPreviews: { [key: string]: string } = { ...previewsToKeep };
+        const previewPromises: Promise<void>[] = [];
+
+        filesNeedingPreviews.forEach((file) => {
+          const promise = new Promise<void>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              newPreviews[file.name] = reader.result as string;
+              resolve();
+            };
+            reader.readAsDataURL(file);
+          });
+          previewPromises.push(promise);
+        });
+
+        // Wait for all previews to be created, then update state
+        Promise.all(previewPromises).then(() => {
+          // Clean up previews for removed files
+          const currentFileNames = selectedImages.map((img) => img.name);
+          const finalPreviews: { [key: string]: string } = {};
+          Object.keys(newPreviews).forEach((key) => {
+            if (currentFileNames.includes(key)) {
+              finalPreviews[key] = newPreviews[key];
+            }
+          });
+          setPreviews(finalPreviews);
+          prevSelectedImagesRef.current = selectedImages;
+        });
+
+        // Return existing previews for now, will be updated by Promise.all
         return previewsToKeep;
-      }
-
-      // Create previews for new files
-      const newPreviews: { [key: string]: string } = { ...prevPreviews };
-      const previewPromises: Promise<void>[] = [];
-
-      filesNeedingPreviews.forEach((file) => {
-        const promise = new Promise<void>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            newPreviews[file.name] = reader.result as string;
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
-        previewPromises.push(promise);
       });
+    }, 0);
 
-      // Wait for all previews to be created, then update state
-      Promise.all(previewPromises).then(() => {
-        // Clean up previews for removed files
-        const currentFileNames = selectedImages.map((img) => img.name);
-        const finalPreviews: { [key: string]: string } = {};
-        Object.keys(newPreviews).forEach((key) => {
-          if (currentFileNames.includes(key)) {
-            finalPreviews[key] = newPreviews[key];
-          }
-        });
-        setPreviews(finalPreviews);
-      });
+    prevSelectedImagesRef.current = selectedImages;
 
-      // Return existing previews for now, will be updated by Promise.all
-      return prevPreviews;
-    });
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [selectedImages]);
 
   const onDrop = useCallback(

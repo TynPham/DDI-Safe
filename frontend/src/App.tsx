@@ -29,7 +29,7 @@ function App() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imageResults, setImageResults] = useState<ImageResult[]>([]);
   const [detectedDrugs, setDetectedDrugs] = useState<string[]>([]);
-  const [interactionResult, setInteractionResult] = useState<string>("");
+  const [interactionResult, setInteractionResult] = useState<string | any>("");
   const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   // Drug name extraction mutation
@@ -52,7 +52,8 @@ function App() {
       return response;
     },
     onSuccess: (data) => {
-      setInteractionResult(data.answer);
+      // Support both old format (string) and new format (object with answer and parsed_result)
+      setInteractionResult(data as any);
     },
     onError: (error) => {
       console.error("API Error:", error);
