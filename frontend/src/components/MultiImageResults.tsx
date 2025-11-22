@@ -65,41 +65,43 @@ export function MultiImageResults({ results, onRemoveImage, onRetryImage }: Mult
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Bước 2: Thành Phần Hoạt Chất Đã Trích Xuất</CardTitle>
-        <CardDescription>Xem lại các thành phần hoạt chất được trích xuất từ mỗi hình ảnh thuốc</CardDescription>
+    <Card className="border-2 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b">
+        <CardTitle className="text-xl font-bold">Thành Phần Hoạt Chất Đã Trích Xuất</CardTitle>
+        <CardDescription className="text-base">Xem lại các thành phần hoạt chất được trích xuất từ mỗi hình ảnh thuốc</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6 mt-4">
         <div className="space-y-4">
           {results.map((result, index) => (
             <Fragment key={result.file.name}>
-              <Card key={result.file.name} className="overflow-hidden">
+              <Card key={result.file.name} className="overflow-hidden border-2 hover:shadow-md transition-shadow duration-200">
                 <CardContent className="p-0">
                   <div className="flex">
                     {/* Image Preview */}
-                    <div className="w-32 h-32 shrink-0 relative">
+                    <div className="w-36 h-36 shrink-0 relative group">
                       <img
                         src={result.preview}
                         alt={`Nhãn thuốc ${index + 1}`}
-                        className="w-full h-full object-cover cursor-pointer"
+                        className="w-full h-full object-cover cursor-pointer transition-transform duration-200 group-hover:scale-105"
                         onClick={() => setExpandedImage(expandedImage === result.file.name ? null : result.file.name)}
                       />
-                      <div className="absolute top-2 left-2">{getStatusIcon(result)}</div>
+                      <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm rounded-full p-1.5 shadow-md">
+                        {getStatusIcon(result)}
+                      </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 p-4">
+                    <div className="flex-1 p-5">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <FileImage className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm truncate">{result.file.name}</span>
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileImage className="h-4 w-4 text-primary" />
+                            <span className="font-semibold text-sm truncate">{result.file.name}</span>
                             <span className="text-xs text-muted-foreground">({(result.file.size / 1024).toFixed(1)} KB)</span>
                           </div>
 
-                          <div className="flex items-center gap-2 mb-3">
-                            <Badge variant="outline" className={getStatusColor(result)}>
+                          <div className="flex items-center gap-2 mb-4">
+                            <Badge variant="outline" className={`${getStatusColor(result)} font-medium px-3 py-1`}>
                               {getStatusText(result)}
                             </Badge>
                           </div>
@@ -110,10 +112,14 @@ export function MultiImageResults({ results, onRemoveImage, onRetryImage }: Mult
                           {/* Extracted Ingredients */}
                           {result.extractedIngredients.length > 0 && (
                             <div className="space-y-2">
-                              <p className="text-sm font-medium text-muted-foreground">Thành Phần Hoạt Chất:</p>
-                              <div className="flex flex-wrap gap-1">
+                              <p className="text-sm font-semibold text-foreground mb-2">Thành Phần Hoạt Chất:</p>
+                              <div className="flex flex-wrap gap-2">
                                 {result.extractedIngredients.map((ingredient, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                  <Badge
+                                    key={idx}
+                                    variant="secondary"
+                                    className="text-xs px-3 py-1 bg-primary/10 text-primary border-primary/20 font-medium"
+                                  >
                                     {ingredient}
                                   </Badge>
                                 ))}
@@ -125,11 +131,21 @@ export function MultiImageResults({ results, onRemoveImage, onRetryImage }: Mult
                         {/* Actions */}
                         <div className="flex flex-col gap-2 ml-4">
                           {result.error && (
-                            <Button variant="outline" size="sm" onClick={() => onRetryImage(result.file.name)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onRetryImage(result.file.name)}
+                              className="shadow-sm hover:shadow-md transition-all duration-200"
+                            >
                               Thử Lại
                             </Button>
                           )}
-                          <Button variant="outline" size="sm" onClick={() => onRemoveImage(result.file.name)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onRemoveImage(result.file.name)}
+                            className="shadow-sm hover:shadow-md transition-all duration-200"
+                          >
                             Xóa
                           </Button>
                         </div>
@@ -160,11 +176,16 @@ export function MultiImageResults({ results, onRemoveImage, onRetryImage }: Mult
         </div>
 
         {/* Summary */}
-        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+        <div className="mt-6 p-4 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg border-2 border-muted">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Tổng số hình ảnh: {results.length}</span>
-            <span className="text-muted-foreground">
-              Đã xử lý thành công: {results.filter((r) => !r.isLoading && !r.error && r.extractedIngredients.length > 0).length}
+            <span className="text-muted-foreground font-medium">
+              Tổng số hình ảnh: <span className="font-semibold text-foreground">{results.length}</span>
+            </span>
+            <span className="text-muted-foreground font-medium">
+              Đã xử lý thành công:{" "}
+              <span className="font-semibold text-primary">
+                {results.filter((r) => !r.isLoading && !r.error && r.extractedIngredients.length > 0).length}
+              </span>
             </span>
           </div>
         </div>
