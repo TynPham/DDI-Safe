@@ -22,7 +22,7 @@ export function DrugList({ drugs, onRemoveDrug, onSaveToCabinet, showSaveButton 
       try {
         const newCount = await onSaveToCabinet(drugs);
         if (newCount > 0) {
-          toast.success(`Đã lưu ${newCount} thuốc mới vào Tủ Thuốc Cá Nhân!`);
+          toast.success(`Đã lưu ${newCount} thành phần thuốc mới vào Tủ Thuốc Cá Nhân!`);
         } else {
           toast.info("Tất cả thuốc này đã có trong Tủ Thuốc Cá Nhân của bạn.");
         }
